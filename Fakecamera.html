@@ -1,0 +1,197 @@
+<!--
+Fake "Live Camera" Webpage
+Save this file as index.html and place your video file (default name: feed.mp4) in the same folder.
+Then push to a GitHub repo and enable GitHub Pages (branch: main, folder: /root). Visit https://<your-username>.github.io/<repo-name>/
+
+Notes:
+ - Modern browsers require videos to be muted for autoplay; the page mutes the video automatically.
+ - To change the source filename, edit the <video> src attribute below.
+ - Keep the prank harmless and respectful.
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Live Camera - Inner Room Cam</title>
+  <style>
+    :root{--bg:#0b0f12;--panel:#0f1720;--accent:#0ae08a}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#061021 0%, #0b1530 100%);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color:#e6eef8}
+    .container{max-width:980px;margin:28px auto;padding:18px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+
+    /* Camera frame */
+    .camera-wrap{position:relative;border-radius:8px;overflow:hidden;background:#000}
+    video{display:block;width:100%;height:auto;max-height:620px;object-fit:cover;filter:contrast(1.03) saturate(0.95) brightness(0.95)}
+
+    /* CRT/Camera overlay */
+    .overlay{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
+    .grain{position:absolute;inset:0;background-image:repeating-linear-gradient(transparent, rgba(255,255,255,0.001) 1px);opacity:0.04}
+    .vignette{position:absolute;inset:0;box-shadow:inset 0 70px 120px rgba(0,0,0,0.6), inset 0 -70px 120px rgba(0,0,0,0.6)}
+
+    /* HUD */
+    .hud{position:absolute;left:12px;top:12px;font-size:14px;display:flex;gap:12px;align-items:center}
+    .live{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:20px;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px rgba(10,224,138,0.9)}
+    .label{font-weight:600;letter-spacing:0.3px}
+
+    .info{position:absolute;right:12px;top:12px;background:rgba(0,0,0,0.45);padding:8px 12px;border-radius:8px;font-size:13px}
+
+    /* footer timestamp */
+    .timestamp{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,0.48);padding:8px 12px;border-radius:6px;font-family:monospace;font-size:13px}
+
+    /* fake UI */
+    .bar{display:flex;gap:10px;align-items:center}
+    .stat{font-size:12px;color:#b7d0ce}
+
+    /* top label */
+    .cam-title{text-transform:uppercase;font-size:12px;color:#99b0ff;letter-spacing:1.2px}
+
+    /* small controls for user (not visible to prank target) */
+    .controls{margin-top:12px;display:flex;gap:8px;align-items:center}
+    .btn{background:#0b1220;border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px;color:#dfeffb;cursor:pointer}
+    .muted{opacity:0.6;font-size:13px}
+
+    /* subtle scanlines animation */
+    .scanlines{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.01) 0.5px, transparent 0.5px);background-size:100% 3px;opacity:0.04;animation:scan 6s linear infinite}
+    @keyframes scan{0%{transform:translateY(-2px)}50%{transform:translateY(2px)}100%{transform:translateY(-2px)}}
+
+    /* make live dot blink */
+    @keyframes blink{0%{opacity:1}50%{opacity:0.15}100%{opacity:1}}
+    .dot.blink{animation:blink 1s linear infinite}
+
+    /* subtle flicker */
+    @keyframes flicker{0%{opacity:0.98}3%{opacity:0.6}6%{opacity:0.98}100%{opacity:0.98}}
+    video.flicker{animation:flicker 8s infinite}
+
+    /* responsive */
+    @media (max-width:640px){.container{margin:14px;padding:12px}.info{display:none}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;flex-direction:column">
+        <div class="cam-title">Inner Room</div>
+        <div style="font-size:20px;font-weight:700">Inner Room</div>
+      </div>
+      <div style="text-align:right;color:#9fb1ff;font-size:13px">Network: <span style="font-weight:700">192.168.1.10</span></div>
+    </div>
+
+    <div class="camera-wrap" style="margin-top:14px">
+      <!--
+        Put your recorded video file in the same folder as this index.html
+        Default name used below: feed.mp4
+        You can change the filename in the <source> tag.
+      -->
+      <video id="camVideo" class="flicker" playsinline muted autoplay loop>
+        <source src="feed.mp4" type="video/mp4">
+        <!-- Alternative: use an external link here. Example: https://yourdomain.com/feed.mp4 -->
+        Your browser doesn't support the video tag.
+      </video>
+
+      <div class="overlay">
+        <div class="grain"></div>
+        <div class="vignette"></div>
+        <div class="scanlines"></div>
+
+        <div class="hud">
+          <div class="live">
+            <div class="dot blink" id="liveDot"></div>
+            <div style="display:flex;flex-direction:column">
+              <div class="label">LIVE</div>
+              <div style="font-size:11px;color:#b7d0ce" id="recStatus">RTSP · 720p · 30fps</div>
+            </div>
+          </div>
+
+          <div style="width:8px"></div>
+          <div class="bar">
+            <div class="stat">CAM ID: INNER-ROOM</div>
+            <div class="stat">MODE: AUTO</div>
+            <div class="stat">SENS: MID</div>
+          </div>
+        </div>
+
+        <div class="info" id="infoBox">
+          <div style="font-weight:700">Recording</div>
+          <div style="font-size:12px;color:#bfded6;margin-top:4px">Motion: <span id="motion">No motion</span></div>
+          <div style="font-size:12px;color:#bfded6;margin-top:2px">Storage: <span id="storage">1.2GB</span></div>
+        </div>
+
+        <div class="timestamp" id="timestamp">00/00/0000 00:00:00</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="jumpBtn">Jump to random "live" point</button>
+      <div class="muted">(Video is muted for autoplay)</div>
+    </div>
+
+    <div style="margin-top:12px;font-size:13px;color:#b8d1ff;opacity:0.9">
+      Tip: replace <code>feed.mp4</code> with your recorded file. For GitHub Pages, upload both files to the repository root.
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('camVideo');
+    const timestamp = document.getElementById('timestamp');
+    const motion = document.getElementById('motion');
+    const storage = document.getElementById('storage');
+    const recStatus = document.getElementById('recStatus');
+
+    // Update a "real-time" timestamp using the system clock to sell the "live" illusion
+    function updateTime(){
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth()+1).padStart(2,'0');
+      const dd = String(now.getDate()).padStart(2,'0');
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mi = String(now.getMinutes()).padStart(2,'0');
+      const ss = String(now.getSeconds()).padStart(2,'0');
+      timestamp.textContent = `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // Small randomized motion indicator to look realistic
+    setInterval(()=>{
+      const motions = ['No motion','Minor motion','Motion detected','Moving object'];
+      motion.textContent = motions[Math.floor(Math.random()*motions.length)];
+      storage.textContent = (1 + Math.random()*5).toFixed(1) + 'GB';
+      // randomize fps display
+      recStatus.textContent = ['RTSP · 720p · 30fps','RTSP · 1080p · 25fps','HTTP · 720p · 30fps'][Math.floor(Math.random()*3)];
+    }, 4500);
+
+    // Button to jump video to a random point to make it look "live" — helpful for short recordings
+    document.getElementById('jumpBtn').addEventListener('click', ()=>{
+      if(!video.duration || isNaN(video.duration)) return;
+      // pick a random time inside the video (avoid first second)
+      const t = Math.min(video.duration - 0.5, Math.max(0.5, Math.random()*video.duration));
+      video.currentTime = t;
+      video.play();
+    });
+
+    // Loop with slight pause to mimic buffering and make it look realistic
+    video.addEventListener('ended', ()=>{
+      // small pause then continue
+      setTimeout(()=>{ video.play() }, 800 + Math.random()*1200);
+    });
+
+    // If video cannot play because of autoplay restrictions, show a small message
+    video.addEventListener('play', ()=>{
+      // nothing for now
+    });
+
+    // Optional: if you want the "live" timestamp to reflect the video's internal time
+    // you can map video.currentTime to a real date: see commented example below.
+    /*
+    const recordingStart = new Date('2025-10-31T21:00:00'); // set the actual time the video was recorded
+    function updateTimeFromVideo(){
+      const t = new Date(recordingStart.getTime() + video.currentTime*1000);
+      // format same as above and set timestamp
+    }
+    video.addEventListener('timeupdate', updateTimeFromVideo);
+    */
+  </script>
+</body>
+</html>
